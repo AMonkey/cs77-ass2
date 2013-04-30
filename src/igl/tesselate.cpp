@@ -155,10 +155,10 @@ Mesh* _tesselate_mesh_once(Mesh* mesh) {
     auto tesselation = new Mesh();
     
     // adjacency
-    auto adj = EdgeHashTable(mesh->triangle, mesh->quads);
+    auto adj = EdgeHashTable(mesh->triangle, mesh->quad);
     
     // add vertices
-    pos->tesselation = mesh->pos;
+    tesselation->pos = mesh->pos;
 
     // Apparently, the below aren't needed
     //tesselation->norm = mesh->norm;
@@ -185,13 +185,40 @@ Mesh* _tesselate_mesh_once(Mesh* mesh) {
     
     // add triangles
     for(auto f : mesh->triangle) {
-        auto ve = vec3i(adj.edge(f.x, f.y),adj.edge(f.y, f.z),adj.edge(f.z, f.x))+vec3i(evo,evo,evo);
-        tesselation->triangle.push_back(vec3i(f.x,ve.x,ve.z));
-        tesselation->triangle.push_back(vec3i(f.y,ve.y,ve.x));
-        tesselation->triangle.push_back(vec3i(f.z,ve.z,ve.y));
+        auto ve = vec3i(
+                    adj.edge(f.x, f.y),
+                    adj.edge(f.y, f.z),
+                    adj.edge(f.z, f.x)) + vec3i(evo, evo, evo);
+        tesselation->triangle.push_back(vec3i(f.x, ve.x, ve.z));
+        tesselation->triangle.push_back(vec3i(f.y, ve.y, ve.x));
+        tesselation->triangle.push_back(vec3i(f.z, ve.z, ve.y));
         tesselation->triangle.push_back(ve);
     }
     
+    // add quads
+    for(auto f : mesh->quad) {
+        auto ve = vec4i(
+                    adj.edge(f.x, f.y),
+                    adj.edge(f.y, f.z),
+                    adj.edge(f.z, f.w),
+                    adj.edge(f.w, f.x)) + vec4i(evo, evo, evo, evo);
+
+        // Create midpoint geometry as centroid of vertices
+        tesselation->pos.push_back( 
+            (mesh->pos[f.x]+mesh->pos[f.y]+mesh->pos[f.z]+mesh->pos[f.w]) / 4
+
+        );
+
+        // Index of newly created vertex
+        auto cent_ind = tesselation->pos.size() - 1;
+
+        tesselation->quad.push_back(vec4i(f.x, ve.x, cent_ind, ve.w));
+        tesselation->quad.push_back(vec4i(f.y, ve.y, cent_ind, ve.x));
+        tesselation->quad.push_back(vec4i(f.z, ve.z, cent_ind, ve.y));
+        tesselation->quad.push_back(vec4i(f.w, ve.w, cent_ind, ve.z));
+
+    }
+
     // add lines
     if(mesh->_tesselation_lines.size() > 0) {
         for(auto l : mesh->_tesselation_lines) {
@@ -199,10 +226,9 @@ Mesh* _tesselate_mesh_once(Mesh* mesh) {
             tesselation->_tesselation_lines.push_back(vec2i(l.x,ve));
             tesselation->_tesselation_lines.push_back(vec2i(ve,l.y));
         }
-    }
-    
+    }    
     return tesselation;
-    return tesselation;
+
 }
 
 /// Apply Catmull-Clark subdivision surface rules on subdiv
