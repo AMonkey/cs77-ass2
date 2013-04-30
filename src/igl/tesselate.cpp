@@ -235,11 +235,122 @@ Mesh* _tesselate_mesh_once(Mesh* mesh) {
 /// @param subdiv The mesh to subdivide
 /// @return The subdivided mesh
 CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
-    auto tesselation = new CatmullClarkSubdiv();
+    int i;
 
-    put_your_code_here("Catmull-Clark Subdiv Tessellation");
+    // Part 1: Basically a direct copy of _tesselate_mesh_once(), constructs
+    //     tesselations for entire subdiv mesh
+    auto tesselation = new CatmullClarkSubdiv();    
 
+    // adjacency
+    // No triangles in a subdivm, only quadrilaterals
+    auto adj = EdgeHashTable(vector<vec3i>(), subdiv->quad);
+    
+    // add vertices
+    tesselation->pos = subdiv->pos;
+
+    // Apparently, the below aren't needed
+    //tesselation->norm = subdiv->norm;
+    //tesselation->texcoord = subdiv->texcoord;
+    
+    // add edge vertices
+    int evo = tesselation->pos.size();
+    for(auto e : adj.edges) {
+        tesselation->pos.push_back(subdiv->pos[e.x]*0.5+subdiv->pos[e.y]*0.5);
+        // 80char limit yall
+        if (not tesselation->norm.empty()) {
+            tesselation->norm.push_back(
+                normalize(subdiv->norm[e.x]*0.5+subdiv->norm[e.y]*0.5)
+
+            );
+        }
+        if (not tesselation->texcoord.empty()) {
+            tesselation->texcoord.push_back(
+                subdiv->texcoord[e.x]*0.5+subdiv->texcoord[e.y]*0.5
+
+            );
+        }
+    }
+    
+    // add quads
+    for(auto f : subdiv->quad) {
+        auto ve = vec4i(
+                    adj.edge(f.x, f.y),
+                    adj.edge(f.y, f.z),
+                    adj.edge(f.z, f.w),
+                    adj.edge(f.w, f.x)) + vec4i(evo, evo, evo, evo);
+
+        // Create midpoint geometry as centroid of vertices
+        tesselation->pos.push_back( 
+            (subdiv->pos[f.x]+subdiv->pos[f.y]+subdiv->pos[f.z]+subdiv->pos[f.w]) / 4
+
+        );
+
+        // Index of newly created vertex
+        auto cent_ind = tesselation->pos.size() - 1;
+
+        tesselation->quad.push_back(vec4i(f.x, ve.x, cent_ind, ve.w));
+        tesselation->quad.push_back(vec4i(f.y, ve.y, cent_ind, ve.x));
+        tesselation->quad.push_back(vec4i(f.z, ve.z, cent_ind, ve.y));
+        tesselation->quad.push_back(vec4i(f.w, ve.w, cent_ind, ve.z));
+
+    }
+
+    // add lines
+    if(subdiv->_tesselation_lines.size() > 0) {
+        for(auto l : subdiv->_tesselation_lines) {
+            int ve = adj.edge(l.x, l.y)+evo;
+            tesselation->_tesselation_lines.push_back(vec2i(l.x,ve));
+            tesselation->_tesselation_lines.push_back(vec2i(ve,l.y));
+        }
+    }    
+    
+    // Part 2: Averaging step
+    //     Adjusts existing vertices by the average of adjacent face centroids
+
+    // Averaging holders, used in part 2;
+    //     avg_v holds sum of vertices and avg_n holds number in sum
+    vec3f avg_v[tesselation->pos.size()];
+    int avg_n[tesselation->pos.size()];
+    //printf("%d %d\n", tesselation->pos.size(), sizeof avg_v / sizeof avg_v[0]);
+    //fflush(stdout);
+    memset(avg_v, 0, sizeof avg_v / sizeof avg_v[0]);
+    memset(avg_n, 0, sizeof avg_n / sizeof avg_n[0]);
+
+    for (auto f : tesselation->quad) {
+        // Find centroid of this quad face
+        auto cent = (tesselation->pos[f.x] + tesselation->pos[f.y]
+                    + tesselation->pos[f.z] + tesselation->pos[f.w])
+                    / 4;
+
+        // Go through all of the vertices in this face and average position
+        avg_v[f.x] += cent;
+        avg_n[f.x] += 1;
+        avg_v[f.y] += cent;
+        avg_n[f.y] += 1;
+        avg_v[f.z] += cent;
+        avg_n[f.z] += 1;
+        avg_v[f.w] += cent;
+        avg_n[f.w] += 1;
+
+    }
+
+    // Run the average calculation
+    for (i = 0; i < tesselation->pos.size(); i++) {
+        avg_v[i] /= avg_n[i];
+
+    }
+
+    // Part 3: Adjust by average
+    //     
+    for (i = 0; i < tesselation->pos.size(); i++) {
+        avg_v[i] = tesselation->pos[i] + (avg_v[i] - tesselation->pos[i])
+                   * (4/avg_n[i]);
+
+    }
+    tesselation->pos = vector<vec3f>(avg_v,
+                                     avg_v + (sizeof avg_v / sizeof avg_v[0]));
     return tesselation;
+
 }
 
 /// Apply subdivision surface rules on subdiv
