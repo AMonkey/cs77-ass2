@@ -78,6 +78,27 @@ Shape* _tesselate_shape_uniform(const function<frame3f (float)> shape_frame,
                                 const function<float (float)> shape_radius,
                                 int ur, bool smooth) {
     auto tesselation = new LineSet();
+    /*
+    auto line = vector<vec2i>();
+    
+    for(int i = 0; i <= ur; i ++) {
+        for(int j = 0; j <= vr; j ++) {
+            float u = i / float(ur);
+            float v = j / float(vr);
+            vec2f uv = vec2f(u,v);
+            auto f = shape_frame(uv);
+            tesselation->pos.push_back(f.o);
+            if(smooth) tesselation->norm.push_back(f.z);
+        }
+    }
+    
+    for(int i = 0; i < ur; i ++) {
+        for(int j = 0; j < vr; j ++) {
+            vec4i f = vec4i((i+0)*(vr+1)+(j+0),(i+0)*(vr+1)+(j+1),(i+1)*(vr+1)+(j+1),(i+1)*(vr+1)+(j+0));
+            if(not ccw) { swap(f.y,f.w); }
+            tesselation->quad.push_back(f);
+        }
+    }*/
 
     put_your_code_here("Bezier Spline Tesselation");
     
@@ -237,8 +258,6 @@ Mesh* _tesselate_mesh_once(Mesh* mesh) {
 CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
     int i;
 
-    message("Running _tesselate_catmullclarck_once(), which is currently incomplete");
-
     // Part 1: Basically a direct copy of _tesselate_mesh_once(), constructs
     //     tesselations for entire subdiv mesh
     auto tesselation = new CatmullClarkSubdiv();    
@@ -251,8 +270,8 @@ CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
     tesselation->pos = subdiv->pos;
 
     // Apparently, the below aren't needed
-    //tesselation->norm = subdiv->norm;
-    //tesselation->texcoord = subdiv->texcoord;
+    tesselation->norm = subdiv->norm;
+    tesselation->texcoord = subdiv->texcoord;
     
     // add edge vertices
     int evo = tesselation->pos.size();
@@ -305,7 +324,7 @@ CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
             tesselation->_tesselation_lines.push_back(vec2i(ve,l.y));
         }
     }    
-    
+
     // Part 2: Averaging step
     //     Adjusts existing vertices by the average of adjacent face centroids
 
@@ -316,7 +335,7 @@ CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
     //printf("%d %d\n", tesselation->pos.size(), sizeof avg_v / sizeof avg_v[0]);
     //fflush(stdout);
     memset(avg_v, 0, sizeof avg_v / sizeof avg_v[0]);
-    memset(avg_n, 0, sizeof avg_n / sizeof avg_n[0]);
+    memset(avg_n, 0, tesselation->pos.size()*sizeof(int));
 
     for (auto f : tesselation->quad) {
         // Find centroid of this quad face
@@ -327,30 +346,32 @@ CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
         // Go through all of the vertices in this face and average position
         avg_v[f.x] += cent;
         avg_n[f.x] += 1;
+
         avg_v[f.y] += cent;
         avg_n[f.y] += 1;
+
         avg_v[f.z] += cent;
         avg_n[f.z] += 1;
+
         avg_v[f.w] += cent;
         avg_n[f.w] += 1;
 
     }
-
-    // Run the average calculation
-    for (i = 0; i < tesselation->pos.size(); i++) {
-        avg_v[i] /= avg_n[i];
-
-    }
-
     // Part 3: Adjust by average
-    //     
+    //
+
     for (i = 0; i < tesselation->pos.size(); i++) {
-        avg_v[i] = tesselation->pos[i] + (avg_v[i] - tesselation->pos[i])
-                   * (4/avg_n[i]);
+        // Run the average calculation
+        avg_v[i] /= avg_n[i];
+        tesselation->pos[i] = tesselation->pos[i]
+                              + (avg_v[i] - tesselation->pos[i]) * (4/avg_n[i]);
+        //message_va("%f %f %f\n", avg_v[i].x, avg_v[i].y, avg_v[i].z);
 
     }
-    tesselation->pos = vector<vec3f>(avg_v,
-                                     avg_v + (sizeof avg_v / sizeof avg_v[0]));
+
+    // Set new positions
+    //tesselation->pos = vector<vec3f>(avg_v,
+    //                                 avg_v + (sizeof avg_v / sizeof avg_v[0]));
     return tesselation;
 
 }
