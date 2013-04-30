@@ -236,6 +236,7 @@ Mesh* _tesselate_mesh_once(Mesh* mesh) {
 /// @return The subdivided mesh
 CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
     int i;
+
     message("Running _tesselate_catmullclarck_once(), which is currently incomplete");
 
     // Part 1: Basically a direct copy of _tesselate_mesh_once(), constructs
