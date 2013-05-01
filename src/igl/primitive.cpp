@@ -49,7 +49,11 @@ mat4f transformed_matrix(TransformedSurface* transformed) {
                          vec4f(0, 0, 0, 1)
 
                    );
-    return mat_t * mat_r_z * mat_r_y * mat_r_x * mat_s;
+
+    auto m = mat_t * mat_r_z * mat_r_y * mat_r_x * mat_s;
+
+    return m;
+    //return m * transformed_matrix_inv(transformed); // uncomment to check inv
 
 }
 
@@ -98,7 +102,7 @@ mat4f transformed_matrix_inv(TransformedSurface* transformed) {
                          vec4f(0, 0, 0, 1)
 
                    );
-    return mat_t * mat_r_z * mat_r_y * mat_r_x * mat_s;
+    return mat_s * mat_r_x * mat_r_y * mat_r_z * mat_t;
 
 }
 

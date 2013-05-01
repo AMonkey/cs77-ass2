@@ -78,7 +78,7 @@ frame3f spline_frame(Spline* spline, int elementid, float u) {
 }
 
 float spline_radius(Spline* spline, int elementid, float u) {
-    //put_your_code_here("Bezier Spline Tessellation");
+    message("WOOPS this never gets used.\n");
 
     return spline->radius[elementid];
 }

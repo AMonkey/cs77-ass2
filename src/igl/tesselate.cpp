@@ -293,7 +293,7 @@ CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
 
         // Create midpoint geometry as centroid of vertices
         tesselation->pos.push_back( 
-            (subdiv->pos[f.x]+subdiv->pos[f.y]+subdiv->pos[f.z]+subdiv->pos[f.w]) / 4
+            (subdiv->pos[f.x]+subdiv->pos[f.y]+subdiv->pos[f.z]+subdiv->pos[f.w]) / 4.0
 
         );
 
@@ -332,7 +332,7 @@ CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
         // Find centroid of this quad face
         auto cent = (tesselation->pos[f.x] + tesselation->pos[f.y]
                     + tesselation->pos[f.z] + tesselation->pos[f.w])
-                    / 4;
+                    / 4.0;
 
         // Go through all of the vertices in this face and average position
         avg_v[f.x] += cent;
@@ -355,7 +355,7 @@ CatmullClarkSubdiv* _tesselate_catmullclark_once(CatmullClarkSubdiv* subdiv) {
         // Run the average calculation
         avg_v[i] /= avg_n[i];
         tesselation->pos[i] = tesselation->pos[i]
-                              + (avg_v[i] - tesselation->pos[i]) * (4/avg_n[i]);
+                              + (avg_v[i] - tesselation->pos[i]) * (4.0/avg_n[i]);
         //message_va("%f %f %f\n", avg_v[i].x, avg_v[i].y, avg_v[i].z);
 
     }
