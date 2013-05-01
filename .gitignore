@@ -1,2 +1,4 @@
 view*
 *.o
+*.png
+doc/
