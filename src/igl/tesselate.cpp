@@ -78,29 +78,20 @@ Shape* _tesselate_shape_uniform(const function<frame3f (float)> shape_frame,
                                 const function<float (float)> shape_radius,
                                 int ur, bool smooth) {
     auto tesselation = new LineSet();
-    /*
     auto line = vector<vec2i>();
     
     for(int i = 0; i <= ur; i ++) {
-        for(int j = 0; j <= vr; j ++) {
-            float u = i / float(ur);
-            float v = j / float(vr);
-            vec2f uv = vec2f(u,v);
-            auto f = shape_frame(uv);
-            tesselation->pos.push_back(f.o);
-            if(smooth) tesselation->norm.push_back(f.z);
+        float u = i / float(ur);
+        auto f = shape_frame(u);
+        tesselation->pos.push_back(f.o);
+        tesselation->radius.push_back(shape_radius(u));
+        tesselation->cubic
+        if(smooth) {
+            tesselation->norm.push_back(f.z);
+
         }
     }
-    
-    for(int i = 0; i < ur; i ++) {
-        for(int j = 0; j < vr; j ++) {
-            vec4i f = vec4i((i+0)*(vr+1)+(j+0),(i+0)*(vr+1)+(j+1),(i+1)*(vr+1)+(j+1),(i+1)*(vr+1)+(j+0));
-            if(not ccw) { swap(f.y,f.w); }
-            tesselation->quad.push_back(f);
-        }
-    }*/
-
-    put_your_code_here("Bezier Spline Tesselation");
+    //put_your_code_here("Bezier Spline Tesselation");
     
     return tesselation;
 }
@@ -588,13 +579,20 @@ Shape* tesselate_shape(Shape* shape, int level, bool smooth) {
     else if(is<Spline>(shape)) {
         auto spline = cast<Spline>(shape);
         auto tesselation = _tesselate_shape_uniform(
-            [spline](float u){ return spline_frame(spline,spline_continous_segment(spline,u),
-                                                          spline_continous_param(spline, u)); },
-            [spline](float u){
+            [spline](float u) {
+                return spline_frame( //spline called
+                            spline,
+                            spline_continous_segment(spline,u),
+                            spline_continous_param(spline, u)
+
+                       );
+            },
+            [spline](float u) {
                 auto elementid = spline_continous_segment(spline,u);
                 auto t = spline_continous_param(spline, u);
                 auto s = spline->cubic[elementid];
                 return interpolate_bezier_cubic(spline->radius, s, t);
+
             },
             spline->cubic.size()*pow2(level+2), smooth);
         return tesselation;
