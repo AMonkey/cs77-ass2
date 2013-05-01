@@ -85,9 +85,9 @@ Shape* _tesselate_shape_uniform(const function<frame3f (float)> shape_frame,
         auto f = shape_frame(u);
         tesselation->pos.push_back(f.o);
         tesselation->radius.push_back(shape_radius(u));
-        tesselation->cubic
-        if(smooth) {
-            tesselation->norm.push_back(f.z);
+        if (i != 0) {
+            auto ind = tesselation->pos.size() - 1;
+            tesselation->line.push_back(vec2i(ind-1, ind));
 
         }
     }

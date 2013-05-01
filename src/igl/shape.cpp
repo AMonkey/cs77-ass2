@@ -65,12 +65,12 @@ frame3f triangle_frame(Triangle* triangle, const vec2f& uv) {
 frame3f spline_frame(Spline* spline, int elementid, float u) {
     auto frame = identity_frame3f;
     //put_your_code_here("Bezier Spline Tessellation");
-    frame.x = interpolate_bezier_cubic_derivative(spline->pos[elementid],
+    frame.x = interpolate_bezier_cubic_derivative(spline->pos,
                                                   spline->cubic[elementid],
                                                   u);
     frame.y = y3f;
     frame.z = z3f;
-    frame.o = interpolate_bezier_cubic(spline->pos[elementid],
+    frame.o = interpolate_bezier_cubic(spline->pos,
                                        spline->cubic[elementid],
                                        u);
 
